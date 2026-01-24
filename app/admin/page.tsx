@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, setDoc, query, orderBy, updateDoc } from "firebase/firestore";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import { db, auth, googleProvider } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Loader2, Trash2, Save, Calendar, Video, Image as ImageIcon, User, LogOut, MessageSquarePlus, Edit, X } from "lucide-react";
+import { Loader2, Trash2, Save, Calendar, Video, Image as ImageIcon, User as UserIcon, LogOut, MessageSquarePlus, Edit, X } from "lucide-react";
 import { getYouTubeThumbnail } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -17,6 +17,8 @@ interface ScheduleItem { id: string; title: string; date: string; time: string; 
 interface ProfileData { bio?: string; responsibilities?: string; education?: string; }
 interface PostItem { id: string; title: string; content: string; images: string[]; created_at: { seconds: number, nanoseconds: number } | null; }
 
+const AUTHORIZED_EMAILS = ["yeshwanthgunda98@gmail.com", "sghdas.rns@gmail.com"];
+
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [activeTab, setActiveTab] = useState<"courses" | "events" | "schedule" | "profile" | "posts">("posts");
@@ -24,10 +26,8 @@ export default function AdminPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Auth State
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
-
-    const AUTHORIZED_EMAILS = ["yeshwanthgunda98@gmail.com", "sghdas.rns@gmail.com"];
 
     // Data
     const [courses, setCourses] = useState<Course[]>([]);
@@ -111,8 +111,9 @@ export default function AdminPage() {
             } else {
                 toast.success("Welcome back!");
             }
-        } catch (error: any) {
-            toast.error(error.message || "Login Failed");
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : "Login Failed";
+            toast.error(msg);
         }
     };
 
@@ -327,7 +328,10 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-neutral-800 p-4 md:p-8 font-sans">
             <header className="max-w-6xl mx-auto flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-orange-100">
-                <h1 className="text-2xl font-serif text-primary">Dashboard</h1>
+                <div>
+                    <h1 className="text-2xl font-serif text-primary">Dashboard</h1>
+                    <p className="text-xs text-neutral-400">Logged in as: {user?.email}</p>
+                </div>
                 <button onClick={logout} className="text-sm text-neutral-500 hover:text-red-500 flex items-center gap-2">
                     <LogOut className="w-4 h-4" /> Logout
                 </button>
@@ -349,7 +353,7 @@ export default function AdminPage() {
                         <Calendar className="w-5 h-5" /> Schedule
                     </button>
                     <button onClick={() => { setActiveTab("profile"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "profile" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
-                        <User className="w-5 h-5" /> Profile Text
+                        <UserIcon className="w-5 h-5" /> Profile Text
                     </button>
                 </aside>
 
