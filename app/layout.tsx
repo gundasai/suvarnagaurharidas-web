@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   title: "Suvarna Gaura Hari Das | Modern Spiritual Minimalism",
 
   description: "Bridging Technology & Ancient Wisdom.",
+  icons: {
+    icon: "/monk-profile.png",
+  },
 };
 
 export default function RootLayout({
