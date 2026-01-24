@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Suvarna Gaur Hari Das - Personal Website
+
+A high-performance, "Zero-Maintenance" personal brand website built with Next.js 14, Tailwind, and Firebase.
+
+## Tech Stack
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS + Shadcn UI
+- **Animations**: Framer Motion + Lenis Scroll
+- **Database**: Firebase Firestore & Storage
 
 ## Getting Started
 
-First, run the development server:
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Run Development Server**
+   ```bash
+   npm run dev
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. **Open Admin Panel**
+   Navigate to `http://localhost:3000/admin` to manage content.
+   *Note: You must enable "Google" sign-in provider in your Firebase Console Authentication settings.*
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Architecture
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **`app/page.tsx`**: The main landing page.
+- **`app/admin/page.tsx`**: The content management dashboard.
+- **`components/glass-card.tsx`**: The premium card component for courses.
+- **`lib/firebase.ts`**: Firebase initialization.
+- **`lib/youtube.ts`**: Utilities for thumbnail extraction.
 
-## Learn More
+## Maintenance
+To add new content, simply visit `/admin` and log in. No code changes required for:
+- Adding new YouTube courses.
+- Adding photos to the journey gallery.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+This project is optimized for deployment on [Vercel](https://vercel.com).
+Simply import the project and deploy.
