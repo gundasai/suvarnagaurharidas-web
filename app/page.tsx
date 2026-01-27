@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CourseGrid } from "@/components/course-grid";
-import { EventGallery } from "@/components/event-gallery";
+// import { EventGallery } from "@/components/event-gallery";
 import { Footer } from "@/components/footer";
 import { MapPin, Clock } from "lucide-react";
 import Image from "next/image";
@@ -309,10 +309,10 @@ export default function Home() {
         </section>
       )}
 
-      {/* Gallery Section */}
-      <section className="py-24 bg-white">
+      {/* Gallery Section Removed */}
+      {/* <section className="py-24 bg-white">
         <EventGallery />
-      </section>
+      </section> */}
 
       <Footer />
     </main>

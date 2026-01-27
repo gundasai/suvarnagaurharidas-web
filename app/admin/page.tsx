@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 // Types
 interface Course { id: string; title: string; youtube_url: string; }
-interface EventItem { id: string; image_url: string; }
+// interface EventItem { id: string; image_url: string; }
 interface ScheduleItem { id: string; title: string; date: string; time: string; location: string; active: boolean; }
 interface ProfileData { bio?: string; responsibilities?: string; education?: string; }
 interface PostItem { id: string; title: string; content: string; images: string[]; created_at: { seconds: number, nanoseconds: number } | null; }
@@ -21,7 +21,7 @@ const AUTHORIZED_EMAILS = ["yeshwanthgunda98@gmail.com", "sghdas.rns@gmail.com"]
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [activeTab, setActiveTab] = useState<"courses" | "events" | "schedule" | "profile" | "posts">("posts");
+    const [activeTab, setActiveTab] = useState<"courses" | "schedule" | "profile" | "posts">("posts");
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -31,7 +31,7 @@ export default function AdminPage() {
 
     // Data
     const [courses, setCourses] = useState<Course[]>([]);
-    const [events, setEvents] = useState<EventItem[]>([]);
+    // const [events, setEvents] = useState<EventItem[]>([]);
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [posts, setPosts] = useState<PostItem[]>([]);
     const [profile, setProfile] = useState<ProfileData>({ bio: "", responsibilities: "", education: "" });
@@ -45,7 +45,7 @@ export default function AdminPage() {
     // Other Form States
     const [courseTitle, setCourseTitle] = useState("");
     const [courseUrl, setCourseUrl] = useState("");
-    const [eventImage, setEventImage] = useState<File | null>(null);
+    // const [eventImage, setEventImage] = useState<File | null>(null);
     const [scheduleItem, setScheduleItem] = useState({ title: "", date: "", time: "", location: "" });
 
     useEffect(() => {
@@ -79,9 +79,9 @@ export default function AdminPage() {
             if (activeTab === "courses") {
                 const snap = await getDocs(collection(db, "courses"));
                 setCourses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Course)));
-            } else if (activeTab === "events") {
-                const snap = await getDocs(collection(db, "events"));
-                setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() } as EventItem)));
+                // } else if (activeTab === "events") {
+                //     const snap = await getDocs(collection(db, "events"));
+                //     setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() } as EventItem)));
             } else if (activeTab === "schedule") {
                 const snap = await getDocs(collection(db, "schedule"));
                 setSchedule(snap.docs.map(d => ({ id: d.id, ...d.data() } as ScheduleItem)));
@@ -126,7 +126,7 @@ export default function AdminPage() {
         setEditingId(null);
         setPostTitle(""); setPostContent(""); setPostImages([]); setExistingPostImages([]);
         setCourseTitle(""); setCourseUrl("");
-        setEventImage(null);
+        // setEventImage(null);
         setScheduleItem({ title: "", date: "", time: "", location: "" });
     };
 
@@ -245,7 +245,7 @@ export default function AdminPage() {
         setSubmitting(false);
     };
 
-    const handleEventSubmit = async (e: React.FormEvent) => {
+    /* const handleEventSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!eventImage) return;
         setSubmitting(true);
@@ -264,7 +264,7 @@ export default function AdminPage() {
             }
         );
         setSubmitting(false);
-    };
+    }; */
 
     const handleScheduleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -346,9 +346,9 @@ export default function AdminPage() {
                     <button onClick={() => { setActiveTab("courses"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "courses" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <Video className="w-5 h-5" /> Video Courses
                     </button>
-                    <button onClick={() => { setActiveTab("events"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "events" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
+                    {/* <button onClick={() => { setActiveTab("events"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "events" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <ImageIcon className="w-5 h-5" /> Photo Gallery
-                    </button>
+                    </button> */}
                     <button onClick={() => { setActiveTab("schedule"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "schedule" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <Calendar className="w-5 h-5" /> Schedule
                     </button>
@@ -455,7 +455,7 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    {activeTab === "events" && (
+                    {/* {activeTab === "events" && (
                         <div className="space-y-6">
                             <form onSubmit={handleEventSubmit} className="border-2 border-dashed border-neutral-300 rounded-xl p-8 text-center hover:border-primary cursor-pointer relative bg-neutral-50/50">
                                 <input type="file" required accept="image/*" onChange={e => setEventImage(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
@@ -468,14 +468,13 @@ export default function AdminPage() {
                             <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
                                 {events.map(event => (
                                     <div key={event.id} className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={event.image_url} alt="" className="w-full aspect-square object-cover rounded-lg shadow-sm" />
                                         <button onClick={() => handleDelete("events", event.id)} className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     {activeTab === "schedule" && (
                         <div className="space-y-6">
