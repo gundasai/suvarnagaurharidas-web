@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, setDoc, q
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import { db, auth, googleProvider } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Loader2, Trash2, Save, Calendar, Video, Image as ImageIcon, User as UserIcon, LogOut, MessageSquarePlus, Edit, X } from "lucide-react";
+import { Loader2, Trash2, Save, Calendar, Video, User as UserIcon, LogOut, MessageSquarePlus, Edit, X } from "lucide-react";
 import { getYouTubeThumbnail } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
