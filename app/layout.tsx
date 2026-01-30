@@ -10,12 +10,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
 
 export const metadata: Metadata = {
-  title: "Suvarna Gaura Hari Das | Modern Spiritual Minimalism",
+  title: "Suvarna Gaura Hari Das | Monk•Educator•Mentor•Life Coach",
 
   description: "Bridging Technology & Ancient Wisdom.",
-  icons: {
-    icon: "/monk-profile.png",
-  },
 };
 
 export default function RootLayout({
