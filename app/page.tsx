@@ -56,7 +56,7 @@ export default function Home() {
             const tB = b.created_at?.seconds || 0;
             return tB - tA;
           });
-          setPosts(allPosts.slice(0, 3));
+          setPosts(allPosts);
         }
 
       } catch (error) {
