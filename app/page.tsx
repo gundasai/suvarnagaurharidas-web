@@ -80,7 +80,8 @@ export default function Home() {
     <main className="min-h-screen bg-[#FDFBF7] selection:bg-secondary selection:text-black overflow-x-hidden">
 
       {/* Navbar (Simple floating) */}
-      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-md border border-white/40 shadow-sm rounded-full px-8 py-3 flex gap-8 text-sm font-medium tracking-wide text-neutral-600">
+      {/* Navbar (Simple floating) */}
+      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-white/80 backdrop-blur-md border border-white/40 shadow-sm rounded-full px-6 md:px-8 py-3 flex gap-4 md:gap-8 text-sm font-medium tracking-wide text-neutral-600 max-w-[90vw] overflow-x-auto no-scrollbar whitespace-nowrap">
         <a href="#about" className="hover:text-primary transition-colors">About</a>
         <a href="#courses" className="hover:text-primary transition-colors">Courses</a>
         {schedule.length > 0 && <a href="#upcoming" className="hover:text-primary transition-colors">Upcoming</a>}
@@ -88,7 +89,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-6 lg:px-12">
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-4 md:px-6 lg:px-12">
         <div className="absolute inset-0 z-0 overflow-hidden">
           {/* Decorative Circles */}
           <div className="absolute top-[-10%] right-[-5%] w-[50vh] h-[50vh] rounded-full bg-secondary/10 blur-3xl animate-pulse delay-75"></div>
@@ -150,7 +151,7 @@ export default function Home() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-24 px-6 bg-[#FDFBF7]">
+      <section id="about" className="py-24 px-4 md:px-6 bg-[#FDFBF7]">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
           <div className="space-y-8">
             <h2 className="text-4xl font-serif text-neutral-800">The Journey</h2>
@@ -217,7 +218,7 @@ export default function Home() {
       </section>
 
       {/* Courses Section */}
-      <section id="courses" className="py-24 px-6 max-w-7xl mx-auto space-y-12">
+      <section id="courses" className="py-24 px-4 md:px-6 max-w-7xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <span className="text-primary font-bold tracking-widest uppercase text-sm">Wisdom Library</span>
           <h2 className="text-4xl md:text-5xl font-serif text-neutral-800">Video Discourses</h2>
@@ -229,7 +230,7 @@ export default function Home() {
 
       {/* Upcoming (Schedule) Section */}
       {schedule.length > 0 && (
-        <section id="upcoming" className="py-24 px-6 bg-primary text-white relative overflow-hidden">
+        <section id="upcoming" className="py-24 px-4 md:px-6 bg-primary text-white relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="relative z-10 max-w-4xl mx-auto space-y-12">
             <div className="text-center text-white">
@@ -264,38 +265,38 @@ export default function Home() {
 
       {/* Recent Programs (Posts) Section */}
       {posts.length > 0 && (
-        <section id="programs" className="py-24 px-6 bg-white">
-          <div className="max-w-4xl mx-auto space-y-12">
+        <section id="programs" className="py-24 px-4 md:px-6 bg-white">
+          <div className="w-full max-w-4xl mx-auto space-y-12">
             <div className="text-center">
               <span className="text-primary font-bold tracking-widest uppercase text-sm">Community</span>
-              <h2 className="text-4xl font-serif text-neutral-800 mt-2">Recent Programs</h2>
+              <h2 className="text-3xl md:text-5xl font-serif text-neutral-800 mt-2">Recent Programs</h2>
             </div>
 
             <div className="grid gap-8">
               {posts.map(post => (
-                <div key={post.id} className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div key={post.id} className="bg-white border border-neutral-100 rounded-2xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow w-full max-w-full overflow-hidden">
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border border-orange-100 relative">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border border-orange-100 relative shrink-0">
                       <Image src="/monk-profile.png" alt="Profile" fill className="object-cover" />
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-neutral-800">{post.title}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-lg text-neutral-800 break-words">{post.title}</h3>
                       <p className="text-xs text-neutral-400">Suvarna Gaura Hari Das • Check Update</p>
                     </div>
                   </div>
 
-                  <p className="text-neutral-600 leading-relaxed mb-6 whitespace-pre-wrap">
+                  <p className="text-neutral-600 leading-relaxed mb-6 whitespace-pre-wrap break-words">
                     {post.content}
                   </p>
 
                   {/* Image Grid */}
                   {post.images && post.images.length > 0 && (
-                    <div className={`grid gap-2 ${post.images.length === 1 ? 'grid-cols-1' :
-                      post.images.length === 2 ? 'grid-cols-2' :
-                        'grid-cols-2 md:grid-cols-3'
+                    <div className={`grid gap-2 w-full max-w-full ${post.images.length === 1 ? 'grid-cols-1' :
+                      post.images.length === 2 ? 'grid-cols-1 sm:grid-cols-2' :
+                        'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
                       }`}>
                       {post.images.map((img, i) => (
-                        <div key={i} className={`relative rounded-xl overflow-hidden bg-neutral-100 ${post.images.length === 3 && i === 0 ? 'md:col-span-2 md:row-span-2 aspect-video' : 'aspect-square'}`}>
+                        <div key={i} className={`relative rounded-xl overflow-hidden bg-neutral-100 w-full max-w-full ${post.images.length === 3 && i === 0 ? 'md:col-span-2 md:row-span-2 aspect-video' : 'aspect-square'}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={img} alt="Post image" className="w-full h-full object-cover" />
                         </div>
