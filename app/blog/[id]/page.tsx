@@ -103,27 +103,27 @@ export default function BlogArticlePage() {
 
   return (
     <main className="min-h-screen bg-[#FDFBF7] text-neutral-800 selection:bg-secondary selection:text-black">
-      {/* Top Floating Navigation */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 max-w-[95vw]">
-        <Link
-          href="/#blogs"
-          className="bg-white/90 backdrop-blur-md border border-neutral-200/80 shadow-md rounded-full px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:text-primary hover:shadow-lg transition-all flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" /> All Blogs
-        </Link>
-
-        <a
-          href="https://gita-wisdom.vercel.app/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white/90 backdrop-blur-md border border-neutral-200/80 shadow-md rounded-full px-5 py-2.5 text-sm font-semibold text-neutral-800 hover:text-primary hover:shadow-lg transition-all hidden sm:flex items-center gap-2"
-        >
-          <BookOpen className="w-4 h-4 text-primary" /> Gita Wisdom Course
-        </a>
-      </div>
-
       {/* Hero / Header Container */}
-      <article className="pt-32 pb-20 px-4 md:px-6 max-w-4xl mx-auto space-y-10">
+      <article className="pt-8 md:pt-12 pb-20 px-4 md:px-6 max-w-4xl mx-auto space-y-10">
+        {/* Top Navigation (Scrolls naturally with page) */}
+        <div className="flex items-center justify-between gap-4 py-2 border-b border-orange-100/60 pb-6">
+          <Link
+            href="/#blogs"
+            className="bg-white border border-neutral-200/80 shadow-xs rounded-full px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:text-primary hover:border-orange-300 transition-all flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> All Blogs
+          </Link>
+
+          <a
+            href="https://gita-wisdom.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-orange-50/90 border border-orange-200/80 shadow-xs rounded-full px-5 py-2.5 text-sm font-semibold text-primary hover:bg-orange-100 transition-all flex items-center gap-2"
+          >
+            <BookOpen className="w-4 h-4 text-primary" /> Gita Wisdom Course
+          </a>
+        </div>
+
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <span className="bg-orange-100 text-primary text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">
@@ -166,13 +166,13 @@ export default function BlogArticlePage() {
           </div>
         </div>
 
-        {/* Featured Cover Image */}
-        <div className="relative w-full aspect-[16/9] md:aspect-[21/9] rounded-3xl overflow-hidden shadow-lg border border-neutral-200/60 bg-orange-50">
+        {/* Featured Cover Image - Shows full image without cropping */}
+        <div className="relative w-full rounded-3xl overflow-hidden shadow-md border border-neutral-200/70 bg-orange-50/40 flex justify-center items-center p-1 md:p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={blog.image || "/monk-profile.png"}
             alt={blog.title}
-            className="w-full h-full object-cover"
+            className="w-full h-auto max-h-[85vh] object-contain rounded-2xl"
           />
         </div>
 
