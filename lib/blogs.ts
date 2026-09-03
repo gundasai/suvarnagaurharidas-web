@@ -35,6 +35,11 @@ When we quiet the noise outside, we awaken the clarity and joy within.`
     author: "Suvarna Gaura Hari Das",
     content: `The Bhagavad Gita is far more than an ancient scripture; it is a practical guidebook for self-mastery and emotional harmony in turbulent times.
 
+> bhārāvatāraṇāyānye bhuvo nāva ivodadhau
+> sīdantyā bhūri-bhāreṇa jāto hy ātma-bhuvārthitaḥ
+
+> "Others say that the world, being overburdened like a boat at sea, was greatly distressed, and that Brahmā prayed for You. Therefore You have appeared to relieve the burden of the Earth." — Śrīmad Bhāgavatam 1.8.34
+
 Set on the battlefield of Kurukshetra, the conversation between Krishna and Arjuna symbolizes the internal conflicts we encounter every day—doubt, fear, confusion, and responsibility.
 
 Through the teachings of the Gita, we learn the principle of Nishkama Karma: acting out of duty and compassion without letting fear of failure or desire for praise dictate our choices. This shift in mindset transforms work into devotion and stress into purpose.

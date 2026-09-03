@@ -184,32 +184,89 @@ export default function BlogArticlePage() {
         )}
 
         {/* Article Body Content */}
-        <div className="space-y-8 text-neutral-700 text-base md:text-lg leading-relaxed font-sans">
-          {paragraphs.map((paragraph, idx) => (
-            <div key={idx} className="space-y-2">
-              {paragraph.split("\n").map((line, lineIdx) => {
-                  if (line.startsWith("- ")) {
+        <div className="space-y-8 text-neutral-800 text-base md:text-lg leading-relaxed font-sans">
+          {paragraphs.map((paragraph, idx) => {
+            const lines = paragraph.split("\n");
+            const isBlockquote = lines.every((line) => line.trim().startsWith(">") || line.trim() === "");
+
+            if (isBlockquote) {
+              const quoteContent = lines
+                .map((l) => l.trim().replace(/^>\s*/, ""))
+                .filter((l) => l.length > 0);
+
+              return (
+                <blockquote
+                  key={idx}
+                  className="border-l-4 border-neutral-600 bg-neutral-50/60 pl-5 md:pl-6 py-3 my-6 rounded-r-xl space-y-2 text-neutral-800 font-serif leading-relaxed shadow-xs"
+                >
+                  {quoteContent.map((qLine, qIdx) => (
+                    <p
+                      key={qIdx}
+                      className={
+                        qLine.startsWith('"') || qLine.startsWith('“')
+                          ? "italic text-neutral-600 text-base md:text-lg"
+                          : "font-medium text-neutral-800 text-base md:text-lg"
+                      }
+                    >
+                      {qLine}
+                    </p>
+                  ))}
+                </blockquote>
+              );
+            }
+
+            return (
+              <div key={idx} className="space-y-3">
+                {lines.map((line, lineIdx) => {
+                  const trimmed = line.trim();
+
+                  // Individual blockquote line
+                  if (trimmed.startsWith(">")) {
+                    const quoteText = trimmed.replace(/^>\s*/, "");
+                    return (
+                      <blockquote
+                        key={lineIdx}
+                        className="border-l-4 border-neutral-600 bg-neutral-50/60 pl-5 pr-4 py-2.5 my-3 rounded-r-lg text-neutral-800 font-serif leading-relaxed"
+                      >
+                        <p className={quoteText.startsWith('"') || quoteText.startsWith('“') ? "italic text-neutral-600" : "font-medium text-neutral-800"}>
+                          {quoteText}
+                        </p>
+                      </blockquote>
+                    );
+                  }
+
+                  // Bullet list item
+                  if (trimmed.startsWith("- ")) {
                     return (
                       <div key={lineIdx} className="flex items-start gap-3 ml-2 my-2">
                         <span className="w-2 h-2 rounded-full bg-primary mt-2.5 shrink-0" />
-                        <p>{line.replace("- ", "")}</p>
+                        <p className="flex-1">{trimmed.replace("- ", "")}</p>
                       </div>
                     );
                   }
-                  if (line.match(/^\d+\.\s/)) {
+
+                  // Numbered list item
+                  if (trimmed.match(/^\d+\.\s/)) {
                     return (
                       <div key={lineIdx} className="flex items-start gap-3 ml-2 my-2">
                         <span className="font-bold text-primary shrink-0">
-                          {line.match(/^\d+\./)?.[0]}
+                          {trimmed.match(/^\d+\./)?.[0]}
                         </span>
-                        <p>{line.replace(/^\d+\.\s/, "")}</p>
+                        <p className="flex-1">{trimmed.replace(/^\d+\.\s/, "")}</p>
                       </div>
                     );
                   }
-                  return <p key={lineIdx} className="whitespace-pre-wrap">{line}</p>;
+
+                  // Standard paragraph text
+                  return (
+                    <p key={lineIdx} className="whitespace-pre-wrap leading-relaxed">
+                      {line}
+                    </p>
+                  );
                 })}
               </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Bottom Banner & Next Actions */}
