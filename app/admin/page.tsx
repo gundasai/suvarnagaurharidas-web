@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, setDoc, q
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import { db, auth, googleProvider } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Loader2, Trash2, Save, Calendar, Video, User as UserIcon, LogOut, MessageSquarePlus, Edit, X } from "lucide-react";
+import { Loader2, Trash2, Save, Calendar, Video, User as UserIcon, LogOut, MessageSquarePlus, Edit, X, BookOpen } from "lucide-react";
 import { getYouTubeThumbnail } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -13,27 +13,35 @@ import { toast } from "sonner";
 // Types
 interface Course { id: string; title: string; youtube_url: string; }
 // interface EventItem { id: string; image_url: string; }
-interface ScheduleItem { id: string; title: string; date: string; time: string; location: string; active: boolean; }
+interface ScheduleItem { id: string; title: string; date: string; end_date?: string; time: string; location: string; active: boolean; }
 interface ProfileData { bio?: string; responsibilities?: string; education?: string; }
 interface PostItem { id: string; title: string; content: string; images: string[]; created_at: { seconds: number, nanoseconds: number } | null; }
+interface BlogItem { id: string; title: string; image: string; summary?: string; content: string; author?: string; created_at: { seconds: number, nanoseconds: number } | null; }
 
 const AUTHORIZED_EMAILS = ["yeshwanthgunda98@gmail.com", "sghdas.rns@gmail.com"];
 
+const isAuthorizedEmail = (email: string | null | undefined): boolean => {
+    if (!email) return false;
+    return AUTHORIZED_EMAILS.some(e => e.toLowerCase() === email.toLowerCase());
+};
+
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [activeTab, setActiveTab] = useState<"courses" | "schedule" | "profile" | "posts">("posts");
+    const [activeTab, setActiveTab] = useState<"posts" | "blogs" | "courses" | "schedule" | "profile">("posts");
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
     // Auth State
     const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
+    const [loggingIn, setLoggingIn] = useState(false);
 
     // Data
     const [courses, setCourses] = useState<Course[]>([]);
     // const [events, setEvents] = useState<EventItem[]>([]);
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [posts, setPosts] = useState<PostItem[]>([]);
+    const [blogs, setBlogs] = useState<BlogItem[]>([]);
     const [profile, setProfile] = useState<ProfileData>({ bio: "", responsibilities: "", education: "" });
 
     // Post Form State
@@ -42,20 +50,27 @@ export default function AdminPage() {
     const [postImages, setPostImages] = useState<File[]>([]);
     const [existingPostImages, setExistingPostImages] = useState<string[]>([]);
 
+    // Blog Form State
+    const [blogTitle, setBlogTitle] = useState("");
+    const [blogSummary, setBlogSummary] = useState("");
+    const [blogContent, setBlogContent] = useState("");
+    const [blogImageFile, setBlogImageFile] = useState<File | null>(null);
+    const [existingBlogImage, setExistingBlogImage] = useState<string>("");
+
     // Other Form States
     const [courseTitle, setCourseTitle] = useState("");
     const [courseUrl, setCourseUrl] = useState("");
     // const [eventImage, setEventImage] = useState<File | null>(null);
-    const [scheduleItem, setScheduleItem] = useState({ title: "", date: "", time: "", location: "" });
+    const [scheduleItem, setScheduleItem] = useState({ title: "", date: "", end_date: "", time: "", location: "" });
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
-                if (currentUser.email && AUTHORIZED_EMAILS.includes(currentUser.email)) {
+                if (isAuthorizedEmail(currentUser.email)) {
                     setUser(currentUser);
                     setIsAuthenticated(true);
                 } else {
-                    toast.error("Unauthorized Access Denied");
+                    toast.error(`Access Denied: ${currentUser.email} is not an authorized administrator.`);
                     signOut(auth);
                     setUser(null);
                     setIsAuthenticated(false);
@@ -95,6 +110,31 @@ export default function AdminPage() {
                     const data = d.data();
                     return { id: d.id, ...data, images: data.images || [] } as PostItem;
                 }));
+            } else if (activeTab === "blogs") {
+                const q = query(collection(db, "blogs"), orderBy("created_at", "desc"));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    setBlogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem)));
+                } else {
+                    // Seed initial blogs directly into Firestore
+                    try {
+                        const { DEFAULT_BLOGS } = await import("@/lib/blogs");
+                        for (const item of DEFAULT_BLOGS.slice(0, 2)) {
+                            await setDoc(doc(db, "blogs", item.id), {
+                                title: item.title,
+                                summary: item.summary || "",
+                                content: item.content,
+                                image: item.image,
+                                author: item.author || "Suvarna Gaura Hari Das",
+                                created_at: serverTimestamp()
+                            });
+                        }
+                        const freshSnap = await getDocs(query(collection(db, "blogs"), orderBy("created_at", "desc")));
+                        setBlogs(freshSnap.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem)));
+                    } catch (e) {
+                        console.error("Failed to seed initial blogs in admin:", e);
+                    }
+                }
             }
         } catch (error) {
             console.error("Fetch Error:", error);
@@ -103,17 +143,26 @@ export default function AdminPage() {
     };
 
     const handleGoogleLogin = async () => {
+        setLoggingIn(true);
         try {
             const result = await signInWithPopup(auth, googleProvider);
-            if (!result.user.email || !AUTHORIZED_EMAILS.includes(result.user.email)) {
+            if (!result.user.email || !isAuthorizedEmail(result.user.email)) {
                 await signOut(auth);
-                toast.error("Access Denied: Email not authorized.");
+                toast.error(`Access Denied: ${result.user?.email || "Email"} is not authorized.`);
             } else {
                 toast.success("Welcome back!");
             }
         } catch (error: unknown) {
-            const msg = error instanceof Error ? error.message : "Login Failed";
-            toast.error(msg);
+            console.error("Google Login Error:", error);
+            const errObj = error as { code?: string; message?: string };
+            if (errObj?.code === "auth/popup-blocked" || errObj?.code === "auth/popup-closed-by-user") {
+                toast.info("Sign in cancelled or popup blocked. Please allow popups or try again.");
+            } else {
+                const msg = error instanceof Error ? error.message : "Login Failed";
+                toast.error("Login failed: " + msg);
+            }
+        } finally {
+            setLoggingIn(false);
         }
     };
 
@@ -125,9 +174,10 @@ export default function AdminPage() {
     const resetForms = () => {
         setEditingId(null);
         setPostTitle(""); setPostContent(""); setPostImages([]); setExistingPostImages([]);
+        setBlogTitle(""); setBlogSummary(""); setBlogContent(""); setBlogImageFile(null); setExistingBlogImage("");
         setCourseTitle(""); setCourseUrl("");
         // setEventImage(null);
-        setScheduleItem({ title: "", date: "", time: "", location: "" });
+        setScheduleItem({ title: "", date: "", end_date: "", time: "", location: "" });
     };
 
     // Generic Delete with Sonner Promise
@@ -164,12 +214,68 @@ export default function AdminPage() {
 
     const handleEditSchedule = (item: ScheduleItem) => {
         setEditingId(item.id);
-        setScheduleItem({ title: item.title, date: item.date, time: item.time, location: item.location });
+        setScheduleItem({ title: item.title, date: item.date, end_date: item.end_date || "", time: item.time, location: item.location });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
+    const handleEditBlog = (blog: BlogItem) => {
+        setEditingId(blog.id);
+        setBlogTitle(blog.title);
+        setBlogSummary(blog.summary || "");
+        setBlogContent(blog.content);
+        setExistingBlogImage(blog.image || "");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        toast.info("Editing Blog: " + blog.title);
+    };
 
     // SUBMIT HANDLERS
+    const handleBlogSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!blogTitle || !blogContent) return;
+        setSubmitting(true);
+
+        const promise = new Promise(async (resolve, reject) => {
+            try {
+                let imageUrl = existingBlogImage;
+                if (blogImageFile) {
+                    imageUrl = await uploadToCloudinary(blogImageFile);
+                }
+
+                if (editingId) {
+                    await updateDoc(doc(db, "blogs", editingId), {
+                        title: blogTitle,
+                        summary: blogSummary,
+                        content: blogContent,
+                        image: imageUrl,
+                        author: "Suvarna Gaura Hari Das"
+                    });
+                } else {
+                    await addDoc(collection(db, "blogs"), {
+                        title: blogTitle,
+                        summary: blogSummary,
+                        content: blogContent,
+                        image: imageUrl,
+                        author: "Suvarna Gaura Hari Das",
+                        created_at: serverTimestamp()
+                    });
+                }
+
+                await fetchData();
+                resetForms();
+                resolve(true);
+            } catch (err) {
+                reject(err);
+            } finally {
+                setSubmitting(false);
+            }
+        });
+
+        toast.promise(promise, {
+            loading: editingId ? 'Updating blog...' : 'Publishing blog...',
+            success: editingId ? 'Blog updated!' : 'Blog published!',
+            error: 'Operation failed'
+        });
+    };
     const handlePostSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!postTitle || !postContent) return;
@@ -314,10 +420,14 @@ export default function AdminPage() {
                         <h1 className="text-2xl font-serif text-neutral-800">Admin Access</h1>
                         <p className="text-neutral-500 text-sm">Sign in with Authorized Email</p>
                     </div>
-                    <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white text-neutral-700 font-medium py-3 px-4 rounded-lg border border-neutral-300 hover:bg-neutral-50 transition-colors shadow-sm">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-                        <span>Sign in with Google</span>
+                    <button disabled={loggingIn} onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 bg-white text-neutral-700 font-medium py-3 px-4 rounded-lg border border-neutral-300 hover:bg-neutral-50 transition-colors shadow-sm disabled:opacity-50">
+                        {loggingIn ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        ) : (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+                        )}
+                        <span>{loggingIn ? "Signing in..." : "Sign in with Google"}</span>
                     </button>
                     <p className="text-xs text-neutral-400">Strictly for authorized administrators.</p>
                 </div>
@@ -343,6 +453,9 @@ export default function AdminPage() {
                     <button onClick={() => { setActiveTab("posts"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "posts" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <MessageSquarePlus className="w-5 h-5" /> Updates / Posts
                     </button>
+                    <button onClick={() => { setActiveTab("blogs"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "blogs" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
+                        <BookOpen className="w-5 h-5" /> Spiritual Blogs
+                    </button>
                     <button onClick={() => { setActiveTab("courses"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "courses" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <Video className="w-5 h-5" /> Video Courses
                     </button>
@@ -359,6 +472,65 @@ export default function AdminPage() {
 
                 {/* Main Content */}
                 <main className="flex-1 bg-white border border-orange-100 shadow-sm rounded-2xl p-6 min-h-[600px]">
+
+                    {/* BLOGS TAB */}
+                    {activeTab === "blogs" && (
+                        <div className="space-y-8">
+                            <div className="bg-orange-50 p-6 rounded-xl border border-orange-100 relative">
+                                {editingId && <button onClick={resetForms} className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-600"><X className="w-5 h-5" /></button>}
+                                <h2 className="text-lg font-serif text-primary mb-4">{editingId ? "Edit Blog Article" : "New Blog Article"}</h2>
+                                <form onSubmit={handleBlogSubmit} className="space-y-4">
+                                    <input required placeholder="Blog Title" className="w-full p-3 rounded-lg border border-orange-200 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogTitle} onChange={e => setBlogTitle(e.target.value)} />
+                                    <input placeholder="Short Summary / Excerpt (Optional)" className="w-full p-3 rounded-lg border border-orange-200 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogSummary} onChange={e => setBlogSummary(e.target.value)} />
+                                    <textarea required placeholder="Write full article here..." className="w-full p-3 rounded-lg border border-orange-200 h-64 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogContent} onChange={e => setBlogContent(e.target.value)} />
+
+                                    {existingBlogImage && (
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-neutral-500">Current Cover Image:</p>
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={existingBlogImage} alt="" className="w-32 h-20 rounded object-cover border" />
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-neutral-500 block">Cover Image</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={e => setBlogImageFile(e.target.files?.[0] || null)}
+                                            className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                        />
+                                    </div>
+
+                                    <button disabled={submitting} className="bg-primary text-white px-8 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
+                                        {submitting ? "Saving..." : (editingId ? "Update Blog" : "Publish Blog")}
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-medium text-neutral-400 uppercase tracking-widest text-sm">Published Blogs</h3>
+                                {blogs.map(blog => (
+                                    <div key={blog.id} className="border border-neutral-100 rounded-xl p-6 flex gap-6 hover:shadow-md transition-shadow group">
+                                        {blog.image && (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img src={blog.image} alt="" className="w-24 h-24 rounded-lg object-cover bg-neutral-100 shrink-0" />
+                                        )}
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="font-bold text-lg">{blog.title}</h4>
+                                                <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleEditBlog(blog)} className="text-blue-400 hover:text-blue-500 p-2"><Edit className="w-4 h-4" /></button>
+                                                    <button onClick={() => handleDelete("blogs", blog.id)} className="text-red-400 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
+                                                </div>
+                                            </div>
+                                            <p className="text-neutral-600 text-sm line-clamp-2">{blog.summary || blog.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* POSTS TAB */}
                     {activeTab === "posts" && (
@@ -480,28 +652,52 @@ export default function AdminPage() {
                         <div className="space-y-6">
                             <form onSubmit={handleScheduleSubmit} className="grid grid-cols-1 gap-4 bg-neutral-50 p-6 rounded-xl relative">
                                 {editingId && <button onClick={resetForms} type="button" className="absolute top-2 right-2 bg-neutral-200 rounded-full p-1"><X className="w-4 h-4" /></button>}
-                                <input required placeholder="Event Title" className="border p-2 rounded" value={scheduleItem.title} onChange={e => setScheduleItem({ ...scheduleItem, title: e.target.value })} />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input required placeholder="Date (Sat, Oct 12)" className="border p-2 rounded" value={scheduleItem.date} onChange={e => setScheduleItem({ ...scheduleItem, date: e.target.value })} />
-                                    <input required placeholder="Time (6:00 PM)" className="border p-2 rounded" value={scheduleItem.time} onChange={e => setScheduleItem({ ...scheduleItem, time: e.target.value })} />
+                                <input required placeholder="Event Title (e.g. Hampi yatra for youth)" className="border p-2.5 rounded-lg text-sm" value={scheduleItem.title} onChange={e => setScheduleItem({ ...scheduleItem, title: e.target.value })} />
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-neutral-500 mb-1 uppercase tracking-wider">Display Date</label>
+                                        <input required placeholder="e.g. October 3-4, 2026" className="w-full border p-2 rounded text-sm" value={scheduleItem.date} onChange={e => setScheduleItem({ ...scheduleItem, date: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-neutral-500 mb-1 uppercase tracking-wider">Expiry / End Date (Auto-Hides)</label>
+                                        <input type="date" className="w-full border p-2 rounded text-sm" value={scheduleItem.end_date} onChange={e => setScheduleItem({ ...scheduleItem, end_date: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-neutral-500 mb-1 uppercase tracking-wider">Time</label>
+                                        <input required placeholder="e.g. All Day or 6:00 PM" className="w-full border p-2 rounded text-sm" value={scheduleItem.time} onChange={e => setScheduleItem({ ...scheduleItem, time: e.target.value })} />
+                                    </div>
                                 </div>
-                                <input required placeholder="Location" className="border p-2 rounded" value={scheduleItem.location} onChange={e => setScheduleItem({ ...scheduleItem, location: e.target.value })} />
-                                <button disabled={submitting} className="bg-primary text-white py-2 rounded font-medium disabled:opacity-50">{editingId ? "Update Class" : "Add Class"}</button>
+                                <input required placeholder="Location (e.g. Hampi, Vijayanagara, Karnataka)" className="border p-2.5 rounded-lg text-sm" value={scheduleItem.location} onChange={e => setScheduleItem({ ...scheduleItem, location: e.target.value })} />
+                                <button disabled={submitting} className="bg-primary text-white py-2.5 rounded-lg font-medium shadow-sm hover:shadow-md transition-all disabled:opacity-50">{editingId ? "Update Session" : "Add Session"}</button>
                             </form>
 
                             <div className="space-y-3">
-                                {schedule.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center bg-white p-4 rounded border hover:shadow-sm group">
-                                        <div>
-                                            <h3 className="font-semibold text-primary">{item.title}</h3>
-                                            <p className="text-sm text-neutral-500">{item.date} • {item.time} • {item.location}</p>
+                                {schedule.map(item => {
+                                    const todayStr = new Date().toISOString().split('T')[0];
+                                    const isPast = item.end_date ? item.end_date < todayStr : false;
+
+                                    return (
+                                        <div key={item.id} className="flex justify-between items-center bg-white p-4 rounded-xl border hover:shadow-sm group">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-semibold text-neutral-800">{item.title}</h3>
+                                                    {isPast ? (
+                                                        <span className="bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">Expired (Hidden on Website)</span>
+                                                    ) : (
+                                                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">Active Upcoming</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-neutral-500">
+                                                    {item.date} {item.end_date && <span className="text-xs text-neutral-400">(Expires: {item.end_date})</span>} • {item.time} • {item.location}
+                                                </p>
+                                            </div>
+                                            <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEditSchedule(item)} className="text-blue-500 hover:text-blue-600 p-1.5"><Edit className="w-4 h-4" /></button>
+                                                <button onClick={() => handleDelete("schedule", item.id)} className="text-red-500 hover:text-red-600 p-1.5"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100">
-                                            <button onClick={() => handleEditSchedule(item)} className="text-blue-400"><Edit className="w-4 h-4" /></button>
-                                            <button onClick={() => handleDelete("schedule", item.id)} className="text-red-400"><Trash2 className="w-4 h-4" /></button>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
