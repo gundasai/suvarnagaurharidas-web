@@ -8,6 +8,21 @@ export interface BlogItem {
   created_at?: { seconds: number; nanoseconds: number } | null;
 }
 
+export interface BlogComment {
+  id: string;
+  blog_id: string;
+  blog_title?: string;
+  parent_id?: string | null;
+  parent_author?: string;
+  name: string;
+  email: string;
+  comment: string;
+  likes?: number;
+  dislikes?: number;
+  loves?: number;
+  created_at?: { seconds: number; nanoseconds: number } | null;
+}
+
 export const DEFAULT_BLOGS: BlogItem[] = [
   {
     id: "art-of-mindful-living",

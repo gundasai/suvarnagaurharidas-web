@@ -5,10 +5,12 @@ import { collection, addDoc, serverTimestamp, getDocs, deleteDoc, doc, setDoc, q
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import { db, auth, googleProvider } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import { Loader2, Trash2, Save, Calendar, Video, User as UserIcon, LogOut, MessageSquarePlus, Edit, X, BookOpen } from "lucide-react";
+import { Loader2, Trash2, Save, Calendar, Video, User as UserIcon, LogOut, MessageSquarePlus, Edit, X, BookOpen, MessageCircle, Mail, Heart, ThumbsUp, ThumbsDown, CornerDownRight } from "lucide-react";
 import { getYouTubeThumbnail } from "@/lib/youtube";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { RichTextEditor } from "@/components/rich-text-editor";
+import { BlogComment } from "@/lib/blogs";
 
 // Types
 interface Course { id: string; title: string; youtube_url: string; }
@@ -27,7 +29,7 @@ const isAuthorizedEmail = (email: string | null | undefined): boolean => {
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [activeTab, setActiveTab] = useState<"posts" | "blogs" | "courses" | "schedule" | "profile">("posts");
+    const [activeTab, setActiveTab] = useState<"posts" | "blogs" | "courses" | "schedule" | "profile" | "comments">("posts");
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -42,6 +44,7 @@ export default function AdminPage() {
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
     const [posts, setPosts] = useState<PostItem[]>([]);
     const [blogs, setBlogs] = useState<BlogItem[]>([]);
+    const [comments, setComments] = useState<BlogComment[]>([]);
     const [profile, setProfile] = useState<ProfileData>({ bio: "", responsibilities: "", education: "" });
 
     // Post Form State
@@ -113,28 +116,11 @@ export default function AdminPage() {
             } else if (activeTab === "blogs") {
                 const q = query(collection(db, "blogs"), orderBy("created_at", "desc"));
                 const snap = await getDocs(q);
-                if (!snap.empty) {
-                    setBlogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem)));
-                } else {
-                    // Seed initial blogs directly into Firestore
-                    try {
-                        const { DEFAULT_BLOGS } = await import("@/lib/blogs");
-                        for (const item of DEFAULT_BLOGS.slice(0, 2)) {
-                            await setDoc(doc(db, "blogs", item.id), {
-                                title: item.title,
-                                summary: item.summary || "",
-                                content: item.content,
-                                image: item.image,
-                                author: item.author || "Suvarna Gaura Hari Das",
-                                created_at: serverTimestamp()
-                            });
-                        }
-                        const freshSnap = await getDocs(query(collection(db, "blogs"), orderBy("created_at", "desc")));
-                        setBlogs(freshSnap.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem)));
-                    } catch (e) {
-                        console.error("Failed to seed initial blogs in admin:", e);
-                    }
-                }
+                setBlogs(snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem)));
+            } else if (activeTab === "comments") {
+                const q = query(collection(db, "blog_comments"), orderBy("created_at", "desc"));
+                const snap = await getDocs(q);
+                setComments(snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogComment)));
             }
         } catch (error) {
             console.error("Fetch Error:", error);
@@ -456,6 +442,9 @@ export default function AdminPage() {
                     <button onClick={() => { setActiveTab("blogs"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "blogs" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <BookOpen className="w-5 h-5" /> Spiritual Blogs
                     </button>
+                    <button onClick={() => { setActiveTab("comments"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "comments" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
+                        <MessageCircle className="w-5 h-5" /> Blog Comments
+                    </button>
                     <button onClick={() => { setActiveTab("courses"); resetForms(); }} className={cn("w-full text-left p-4 rounded-xl flex items-center gap-3 transition-colors font-medium", activeTab === "courses" ? "bg-primary text-white shadow-lg shadow-orange-200" : "bg-white hover:bg-orange-50 text-neutral-600")}>
                         <Video className="w-5 h-5" /> Video Courses
                     </button>
@@ -482,7 +471,15 @@ export default function AdminPage() {
                                 <form onSubmit={handleBlogSubmit} className="space-y-4">
                                     <input required placeholder="Blog Title" className="w-full p-3 rounded-lg border border-orange-200 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogTitle} onChange={e => setBlogTitle(e.target.value)} />
                                     <input placeholder="Short Summary / Excerpt (Optional)" className="w-full p-3 rounded-lg border border-orange-200 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogSummary} onChange={e => setBlogSummary(e.target.value)} />
-                                    <textarea required placeholder="Write full article here..." className="w-full p-3 rounded-lg border border-orange-200 h-64 focus:outline-none focus:ring-2 focus:ring-primary/50" value={blogContent} onChange={e => setBlogContent(e.target.value)} />
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-neutral-600 block">Article Content (Rich Text Editor)</label>
+                                        <RichTextEditor
+                                            value={blogContent}
+                                            onChange={setBlogContent}
+                                            placeholder="Write full article here with rich formatting, quotes, headings, and spiritual colors..."
+                                        />
+                                    </div>
 
                                     {existingBlogImage && (
                                         <div className="space-y-1">
@@ -524,11 +521,106 @@ export default function AdminPage() {
                                                     <button onClick={() => handleDelete("blogs", blog.id)} className="text-red-400 hover:text-red-500 p-2"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
                                             </div>
-                                            <p className="text-neutral-600 text-sm line-clamp-2">{blog.summary || blog.content}</p>
+                                            <p className="text-neutral-600 text-sm line-clamp-2">{blog.summary || (blog.content ? blog.content.replace(/<[^>]*>?/gm, '') : '')}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* BLOG COMMENTS TAB */}
+                    {activeTab === "comments" && (
+                        <div className="space-y-6">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 pb-2 border-b border-neutral-100">
+                                <div>
+                                    <h2 className="text-xl font-serif font-bold text-neutral-800 flex items-center gap-2">
+                                        <MessageCircle className="w-5 h-5 text-primary" /> Blog Comments & Reflections
+                                    </h2>
+                                    <p className="text-xs text-neutral-500">
+                                        Moderate public comments. Commenter email addresses are visible exclusively here to admins.
+                                    </p>
+                                </div>
+                                <span className="bg-orange-100 text-primary text-xs font-bold px-3 py-1 rounded-full self-start sm:self-auto">
+                                    {comments.length} Total {comments.length === 1 ? "Comment" : "Comments"}
+                                </span>
+                            </div>
+
+                            {comments.length === 0 ? (
+                                <div className="text-center py-16 bg-neutral-50/60 rounded-2xl border border-dashed border-neutral-200">
+                                    <MessageCircle className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
+                                    <p className="text-neutral-500 font-medium">No comments submitted yet.</p>
+                                    <p className="text-xs text-neutral-400 mt-1">Comments submitted on any blog article will appear here.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {comments.map((c) => (
+                                        <div key={c.id} className="border border-neutral-200/80 rounded-2xl p-5 hover:shadow-md transition-all bg-white group space-y-3">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                                                        {c.name ? c.name.charAt(0).toUpperCase() : "U"}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-neutral-800 text-base">{c.name}</h4>
+                                                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                                                            {/* ADMIN-ONLY EMAIL BADGE */}
+                                                            <span className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 text-amber-900 font-mono text-xs px-2.5 py-0.5 rounded-md font-medium" title="Admin-only private email">
+                                                                <Mail className="w-3.5 h-3.5 text-amber-700" />
+                                                                {c.email}
+                                                            </span>
+                                                            {c.created_at?.seconds && (
+                                                                <span className="text-xs text-neutral-400">
+                                                                    • {new Date(c.created_at.seconds * 1000).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleDelete("blog_comments", c.id)}
+                                                    className="text-neutral-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                                    title="Delete Comment"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {c.blog_title && (
+                                                    <div className="text-xs bg-orange-50/60 text-primary border border-orange-100 rounded-lg px-3 py-1 inline-block font-medium">
+                                                        Article: {c.blog_title}
+                                                    </div>
+                                                )}
+                                                {c.parent_author && (
+                                                    <div className="text-xs bg-purple-50 text-purple-700 border border-purple-200 rounded-lg px-2.5 py-1 inline-flex items-center gap-1 font-medium">
+                                                        <CornerDownRight className="w-3 h-3 text-purple-600" />
+                                                        Reply to @{c.parent_author}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="bg-neutral-50 rounded-xl p-3.5 text-neutral-700 text-sm leading-relaxed border border-neutral-100">
+                                                {c.comment}
+                                            </div>
+
+                                            {/* Reactions Stats */}
+                                            <div className="flex flex-wrap items-center gap-4 text-xs pt-1 border-t border-neutral-100">
+                                                <span className="inline-flex items-center gap-1.5 text-rose-600 font-semibold bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100">
+                                                    <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" /> {c.loves || 0} Loves
+                                                </span>
+                                                <span className="inline-flex items-center gap-1.5 text-amber-700 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
+                                                    <ThumbsUp className="w-3.5 h-3.5 text-amber-600 fill-amber-200" /> {c.likes || 0} Likes
+                                                </span>
+                                                <span className="inline-flex items-center gap-1.5 text-neutral-600 font-semibold bg-neutral-100 px-2.5 py-1 rounded-full border border-neutral-200">
+                                                    <ThumbsDown className="w-3.5 h-3.5 text-neutral-500" /> {c.dislikes || 0} Dislikes
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 

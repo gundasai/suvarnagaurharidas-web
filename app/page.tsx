@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, setDoc, doc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { CourseGrid } from "@/components/course-grid";
 // import { EventGallery } from "@/components/event-gallery";
@@ -9,7 +9,7 @@ import { Footer } from "@/components/footer";
 import { MapPin, Clock, ArrowRight, Menu, X, Sparkles, ExternalLink, User, Video, BookOpen, Calendar, MessageSquarePlus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { BlogItem, DEFAULT_BLOGS } from "@/lib/blogs";
+import { BlogItem } from "@/lib/blogs";
 import { parseDateBadge, isEventUpcoming } from "@/lib/utils";
 
 interface ScheduleItem { id: string; title: string; date: string; end_date?: string; time: string; location: string; active: boolean; }
@@ -20,7 +20,7 @@ export default function Home() {
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
-  const [blogs, setBlogs] = useState<BlogItem[]>(DEFAULT_BLOGS);
+  const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -57,32 +57,11 @@ export default function Home() {
           setPosts(allPosts);
         }
 
-        // 4. Blogs (with auto-seeding if collection is empty)
+        // 4. Blogs
         if (results[3].status === "fulfilled") {
-          if (!results[3].value.empty) {
-            const fetchedBlogs = results[3].value.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem));
-            fetchedBlogs.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
-            setBlogs(fetchedBlogs);
-          } else {
-            // Seed initial blogs into Firestore DB so user sees entries in Admin DB
-            try {
-              const seededList: BlogItem[] = [];
-              for (const item of DEFAULT_BLOGS.slice(0, 2)) {
-                await setDoc(doc(db, "blogs", item.id), {
-                  title: item.title,
-                  summary: item.summary || "",
-                  content: item.content,
-                  image: item.image,
-                  author: item.author || "Suvarna Gaura Hari Das",
-                  created_at: serverTimestamp()
-                });
-                seededList.push(item);
-              }
-              setBlogs(seededList);
-            } catch (seedErr) {
-              console.error("Seeding error:", seedErr);
-            }
-          }
+          const fetchedBlogs = results[3].value.docs.map(d => ({ id: d.id, ...d.data() } as BlogItem));
+          fetchedBlogs.sort((a, b) => (b.created_at?.seconds || 0) - (a.created_at?.seconds || 0));
+          setBlogs(fetchedBlogs);
         }
 
       } catch (error) {
@@ -386,7 +365,7 @@ export default function Home() {
                       {blog.title}
                     </h3>
                     <p className="text-neutral-600 text-sm leading-relaxed line-clamp-3">
-                      {blog.summary || (blog.content ? blog.content.substring(0, 140) + "..." : "")}
+                      {blog.summary || (blog.content ? blog.content.replace(/<[^>]*>?/gm, "").substring(0, 140) + "..." : "")}
                     </p>
                   </div>
 
